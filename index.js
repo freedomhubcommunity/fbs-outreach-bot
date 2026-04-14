@@ -17,12 +17,20 @@ const monthNum = { 'January': '01', 'February': '02', 'March': '03', 'April': '0
 function extractReport(text) {
   text = text.trim();
   
+  // Format 1: "Kristine 13 April 2026\nConnections: 10\nAccepted: 10\nMessages: 10\nAppointments: 6"
   let match = text.match(/^([A-Za-z]+)\s+(\d+)\s+([A-Za-z]+)\s+(\d+)\s*\nConnections:\s*(\d+)\s*\nAccepted:\s*(\d+)\s*\nMessages:\s*(\d+)\s*\n(Calls or Appointments|Appointments):\s*(\d+)/i);
   if (match) {
     return { name: match[1], day: match[2], month: match[3], year: match[4], connections: match[5], accepted: match[6], messages: match[7], appointments: match[8] };
   }
 
-  match = text.match(/^([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s*\nConnections:\s*(\d+)\s*\nAccepted:\s*(\d+)\s*\nMessages:\s*(\d+)\s*\n(Appointments|Calls):\s*(\d+)/i);
+  // Format 2: "April 14 - Denis\nConnections: 5\nAccepted 4\nMessages 4\nAppointments 4" (no colons)
+  match = text.match(/^([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s*\nConnections:\s*(\d+)\s*\nAccepted\s*(\d+)\s*\nMessages\s*(\d+)\s*\n(Appointments|Calls|Appointmetns)\s*(\d+)/i);
+  if (match) {
+    return { name: match[3], day: match[2], month: match[1], year: '2026', connections: match[4], accepted: match[5], messages: match[6], appointments: match[7] };
+  }
+
+  // Format 3: "Hey!\nReport from me\nApril 10 - Denis\nConnections: 5\nAccepted 4\nMessages 4\nAppointmetns 4"
+  match = text.match(/Report from me\s*\n\s*([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s*\nConnections:\s*(\d+)\s*\nAccepted\s*(\d+)\s*\nMessages\s*(\d+)\s*\n(Appointments|Calls|Appointmetns)\s*(\d+)/i);
   if (match) {
     return { name: match[3], day: match[2], month: match[1], year: '2026', connections: match[4], accepted: match[5], messages: match[6], appointments: match[7] };
   }
@@ -50,15 +58,10 @@ async function handleTelegram(body) {
 
     await fetch('https://api.notion.com/v1/pages', { method: 'POST', headers: { 'Authorization': 'Bearer ' + NOTION_TOKEN, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' }, body: JSON.stringify({ parent: { database_id: databaseId }, properties: { 'Name': { title: [{ text: { content: manager } }] }, 'Connections Sent': { number: parseInt(report.connections) }, 'Accepted': { number: parseInt(report.accepted) }, 'Welcome Messages': { number: parseInt(report.messages) }, 'Appointments': { number: parseInt(report.appointments) }, 'Date ': { date: { start: dateStr } } } }) });
 
-    const dbUrls = {
-      'kristine': 'https://www.notion.so/freedomsummit/3414f30891408093a737ea2e0b504fd6',
-      'eleonora': 'https://www.notion.so/freedomsummit/3414f308914080d4a939df57ee71f07c',
-      'denis': 'https://www.notion.so/freedomsummit/3414f3089140802c8954f5683857f5dc'
-    };
-    
+    const dbUrls = { 'kristine': 'https://www.notion.so/freedomsummit/3414f30891408093a737ea2e0b504fd6', 'eleonora': 'https://www.notion.so/freedomsummit/3414f308914080d4a939df57ee71f07c', 'denis': 'https://www.notion.so/freedomsummit/3414f3089140802c8954f5683857f5dc' };
     const dbUrl = dbUrls[rawName === 'kristine' ? 'kristine' : (rawName === 'denis' ? 'denis' : 'eleonora')];
 
-    const responseText = 'Hi ' + manager + '! Your report has been saved to Notion.\n\nSummary:\nConnections: ' + report.connections + '\nAccepted: ' + report.accepted + '\nWelcome Messages: ' + report.messages + '\nAppointments: ' + report.appointments + '\n\nDate: ' + dateStr + '\n\nView in Notion: ' + dbUrl + '\n\nHave a great day!';
+    const responseText = 'Hi ' + manager + '! Your report has been saved to Notion.\n\nSummary:\nConnections: ' + report.connections + '\nAccepted: ' + report.accepted + '\nWelcome Messages: ' + report.messages + '\nAppointments: ' + report.appointments + '\nDate: ' + dateStr + '\n\nView in Notion: ' + dbUrl + '\n\nHave a great day!';
     
     await fetch('https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: responseText }) });
 
