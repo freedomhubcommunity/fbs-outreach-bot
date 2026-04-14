@@ -17,44 +17,33 @@ const monthNum = { 'January': '01', 'February': '02', 'March': '03', 'April': '0
 function extractReport(text) {
   text = text.trim();
   
-  // Try all formats, return first match
-  let patterns = [
-    // Format: April 14 - Denis / April 14 Denis (with or without dash, with or without colon)
-    /^([A-Za-z]+)\b (\b+) \b*-\b* (\b+)\b/i,
-    // Format: Report from me\nApril 14 - Denis
-    /^Report from me\n+([A-Za-z]+)\b (\b+) \b*-\b* (\b+)\b/i,
-    // Format: Report from me\nApril 14 (defaults to Denis)
-    /^Report from me\n+([A-Za-z]+)\b (\b+)\b/i,
-    // Format: April 14 (just date, no name - defaults to Denis)
-    /^([A-Za-z]+)\b (\b+)\b/i
-  ];
+  // Simple number extraction - just look for digits
+  let connMatch = text.match(/Connections[^0-9]*([0-9]+)/i);
+  let accMatch = text.match(/Accepted[^0-9]*([0-9]+)/i);
+  let msgMatch = text.match(/Messages[^0-9]*([0-9]+)/i);
+  let aptMatch = text.match(/Appointments[^0-9]*([0-9]+)/i);
   
-  for (let pattern of patterns) {
-    let match = text.match(pattern);
-    if (match) {
-      // Extract numbers
-      let connMatch = text.match(/Connections[:\b]+ (\b+)/i);
-      let accMatch = text.match(/Accepted[:\b]+ (\b+)/i);
-      let msgMatch = text.match(/Messages[:\b]+ (\b+)/i);
-      let aptMatch = text.match(/Appointments[:\b]+ (\b+)/i);
-      
-      if (connMatch && accMatch && msgMatch && aptMatch) {
-        let name = 'Denis';
-        if (match[3]) name = match[3];
-        else if (match[1] && match[1] !== 'Report' && match[1] !== 'April') name = match[1];
-        
-        return { 
-          name: name, 
-          day: match[2], 
-          month: match[1] === 'Report' ? 'April' : match[1], 
-          year: '2026', 
-          connections: connMatch[1], 
-          accepted: accMatch[1], 
-          messages: msgMatch[1], 
-          appointments: aptMatch[1] 
-        };
-      }
-    }
+  if (!connMatch || !accMatch || !msgMatch || !aptMatch) return null;
+  
+  // Try different formats for name and date
+  let match;
+  
+  // Format: April 14 - Denis
+  match = text.match(/^([A-Za-z]+) ([0-9]+) - ([A-Za-z]+)/i);
+  if (match) {
+    return { name: match[3], day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
+  }
+  
+  // Format: Report from me\nApril 14 - Denis
+  match = text.match(/Report from me\n([A-Za-z]+) ([0-9]+) - ([A-Za-z]+)/i);
+  if (match) {
+    return { name: match[3], day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
+  }
+  
+  // Format: Report from me\nApril 14 (defaults to Denis)
+  match = text.match(/Report from me\n([A-Za-z]+) ([0-9]+)/i);
+  if (match) {
+    return { name: 'Denis', day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
   }
 
   return null;
@@ -92,12 +81,6 @@ async function handleTelegram(body) {
     await fetch('https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: responseText }) });
 
     return { success: true };
-  }
-
-  if (!text.match(/^\n+/) && !text.match(/^([A-Za-z]+)/)) {
-    const helpText = 'Hi ' + from + '! Here is the format to send your daily report:\n\nReport from me\nApril 14\nConnections: 5\nAccepted: 4\nMessages: 4\nAppointments: 4\n\nOr:\n\nApril 14 - Denis\nConnections: 5\nAccepted: 4\nMessages: 4\nAppointments: 4';
-    
-    await fetch('https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: helpText }) });
   }
 
   return { parsed: false };
