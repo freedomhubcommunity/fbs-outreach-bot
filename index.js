@@ -59,7 +59,11 @@ async function handleTelegram(body) {
     const dbUrls = { 'kristine': 'https://www.notion.so/freedomsummit/3414f30891408093a737ea2e0b504fd6', 'eleonora': 'https://www.notion.so/freedomsummit/3414f308914080d4a939df57ee71f07c', 'denis': 'https://www.notion.so/freedomsummit/3414f3089140802c8954f5683857f5dc' };
     const dbUrl = dbUrls[rawName === 'kristine' ? 'kristine' : (rawName === 'denis' ? 'denis' : 'eleonora')];
 
-    const responseText = 'Hi ' + manager + '! Your report has been saved to Notion.\n\nSummary:\nConnections: ' + report.connections + '\nAccepted: ' + report.accepted + '\nWelcome Messages: ' + report.messages + '\nAppointments: ' + report.appointments + '\nDate: ' + dateStr + '\n\nView in Notion: ' + dbUrl + '\n\nHave a great day!';
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' UTC';
+    const dateTimeStr = dateStr + ' ' + timeStr;
+    
+    const responseText = 'Hi ' + manager + '! Your report has been saved to Notion.\n\nSummary:\nConnections: ' + report.connections + '\nAccepted: ' + report.accepted + '\nWelcome Messages: ' + report.messages + '\nAppointments: ' + report.appointments + '\nDate & Time: ' + dateTimeStr + '\n\nView in Notion: ' + dbUrl + '\n\nHave a great day!';
     
     await fetch('https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: responseText }) });
 
