@@ -50,7 +50,15 @@ async function handleTelegram(body) {
 
     await fetch('https://api.notion.com/v1/pages', { method: 'POST', headers: { 'Authorization': 'Bearer ' + NOTION_TOKEN, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' }, body: JSON.stringify({ parent: { database_id: databaseId }, properties: { 'Name': { title: [{ text: { content: manager } }] }, 'Connections Sent': { number: parseInt(report.connections) }, 'Accepted': { number: parseInt(report.accepted) }, 'Welcome Messages': { number: parseInt(report.messages) }, 'Appointments': { number: parseInt(report.appointments) }, 'Date ': { date: { start: dateStr } } } }) });
 
-    const responseText = 'Hi ' + manager + '! Your report has been saved to Notion.\n\nSummary:\nConnections: ' + report.connections + '\nAccepted: ' + report.accepted + '\nWelcome Messages: ' + report.messages + '\nAppointments: ' + report.appointments + '\n\nDate: ' + dateStr + '\n\nHave a great day!';
+    const dbUrls = {
+      'kristine': 'https://www.notion.so/freedomsummit/3414f30891408093a737ea2e0b504fd6',
+      'eleonora': 'https://www.notion.so/freedomsummit/3414f308914080d4a939df57ee71f07c',
+      'denis': 'https://www.notion.so/freedomsummit/3414f3089140802c8954f5683857f5dc'
+    };
+    
+    const dbUrl = dbUrls[rawName === 'kristine' ? 'kristine' : (rawName === 'denis' ? 'denis' : 'eleonora')];
+
+    const responseText = 'Hi ' + manager + '! Your report has been saved to Notion.\n\nSummary:\nConnections: ' + report.connections + '\nAccepted: ' + report.accepted + '\nWelcome Messages: ' + report.messages + '\nAppointments: ' + report.appointments + '\n\nDate: ' + dateStr + '\n\nView in Notion: ' + dbUrl + '\n\nHave a great day!';
     
     await fetch('https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: responseText }) });
 
