@@ -17,19 +17,19 @@ const monthNum = { 'January': '01', 'February': '02', 'March': '03', 'April': '0
 function extractReport(text) {
   text = text.trim();
   
-  // Format 1: "Kristine 13 April 2026\nConnections: 10\nAccepted: 10\nMessages: 10\nAppointments: 6"
+  // Format 1: "Kristine 13 April 2026\nConnections: 10\n..."
   let match = text.match(/^([A-Za-z]+)\s+(\d+)\s+([A-Za-z]+)\s+(\d+)\s*\nConnections:\s*(\d+)\s*\nAccepted:\s*(\d+)\s*\nMessages:\s*(\d+)\s*\n(Calls or Appointments|Appointments):\s*(\d+)/i);
   if (match) return { name: match[1], day: match[2], month: match[3], year: match[4], connections: match[5], accepted: match[6], messages: match[7], appointments: match[8] };
 
-  // Format 2: "April 14 - Denis\nConnections: 5\nAccepted 4\nMessages 4\nAppointments 4"
+  // Format 2: "April 14 - Denis\nConnections: 5\n..."
   match = text.match(/^([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s*\nConnections:\s*(\d+)\s*\nAccepted\s*(\d+)\s*\nMessages\s*(\d+)\s*\n(Appointments|Calls|Appointmetns)\s*(\d+)/i);
   if (match) return { name: match[3], day: match[2], month: match[1], year: '2026', connections: match[4], accepted: match[5], messages: match[6], appointments: match[7] };
 
-  // Format 3: "Report from me\nApril 10 - Denis\nConnections: 5\nAccepted 4\nMessages 4\nAppointmetns 4"
+  // Format 3: "Report from me\nApril 10 - Denis\nConnections: 5\n..."
   match = text.match(/Report from me\s*\n\s*([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s*\nConnections:\s*(\d+)\s*\nAccepted\s*(\d+)\s*\nMessages\s*(\d+)\s*\n(Appointments|Calls|Appointmetns)\s*(\d+)/i);
   if (match) return { name: match[3], day: match[2], month: match[1], year: '2026', connections: match[4], accepted: match[5], messages: match[6], appointments: match[7] };
 
-  // Format 4: "Report from me\nApril 9\nConnections 5\nAccepted 4\nMessages 4\nAppointmetns 4" (no name after date)
+  // Format 4: "Report from me\nApril 9\nConnections 5\n..." (no name after date, defaults to Denis)
   match = text.match(/Report from me\s*\n\s*([A-Za-z]+)\s+(\d+)\s*\nConnections\s*(\d+)\s*\nAccepted\s*(\d+)\s*\nMessages\s*(\d+)\s*\n(Appointments|Calls|Appointmetns)\s*(\d+)/i);
   if (match) return { name: 'Denis', day: match[2], month: match[1], year: '2026', connections: match[3], accepted: match[4], messages: match[5], appointments: match[6] };
 
