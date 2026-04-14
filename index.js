@@ -76,7 +76,9 @@ async function handleTelegram(body) {
   }
 
   if (!text.match(/^\d/) && !text.match(/^([A-Za-z]+)/)) {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: `Hi ${from}! 👋\n\nHere's the format to send your daily report:\n\n```\nKristine 13 April 2026\nConnections: 10\nAccepted: 10\nMessages: 10\nAppointments: 6\n```\n\nOr:\n```\nApril 14 - Denis\nConnections: 5\nAccepted: 4\nMessages: 4\nAppointments: 4\n```\n\nJust fill in your numbers and send it here!` }) });
+    const helpText = "Hi " + from + "!" + " Here's the format to send your daily report:" + "\n\nKristine 13 April 2026\nConnections: 10\nAccepted: 10\nMessages: 10\nAppointments: 6" + "\n\nOr:" + "\nApril 14 - Denis\nConnections: 5\nAccepted: 4\nMessages: 4\nAppointments: 4" + "\n\nJust fill in your numbers and send it here!";
+    
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: helpText }) });
   }
 
   return { parsed: false };
