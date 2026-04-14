@@ -17,21 +17,45 @@ const monthNum = { 'January': '01', 'February': '02', 'March': '03', 'April': '0
 function extractReport(text) {
   text = text.trim();
   
-  // Format 1: "Kristine 13 April 2026\nConnections: 10\n..."
-  let match = text.match(/^([A-Za-z]+)\s+(\d+)\s+([A-Za-z]+)\s+(\d+)\s*\nConnections:\s*(\d+)\s*\nAccepted:\s*(\d+)\s*\nMessages:\s*(\d+)\s*\n(Calls or Appointments|Appointments):\s*(\d+)/i);
-  if (match) return { name: match[1], day: match[2], month: match[3], year: match[4], connections: match[5], accepted: match[6], messages: match[7], appointments: match[8] };
-
-  // Format 2: "April 14 - Denis\nConnections: 5\n..."
-  match = text.match(/^([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s*\nConnections:\s*(\d+)\s*\nAccepted\s*(\d+)\s*\nMessages\s*(\d+)\s*\n(Appointments|Calls|Appointmetns)\s*(\d+)/i);
-  if (match) return { name: match[3], day: match[2], month: match[1], year: '2026', connections: match[4], accepted: match[5], messages: match[6], appointments: match[7] };
-
-  // Format 3: "Report from me\nApril 10 - Denis\nConnections: 5\n..."
-  match = text.match(/Report from me\s*\n\s*([A-Za-z]+)\s+(\d+)\s*-\s*([A-Za-z]+)\s*\nConnections:\s*(\d+)\s*\nAccepted\s*(\d+)\s*\nMessages\s*(\d+)\s*\n(Appointments|Calls|Appointmetns)\s*(\d+)/i);
-  if (match) return { name: match[3], day: match[2], month: match[1], year: '2026', connections: match[4], accepted: match[5], messages: match[6], appointments: match[7] };
-
-  // Format 4: "Report from me\nApril 9\nConnections 5\n..." (no name after date, defaults to Denis)
-  match = text.match(/Report from me\s*\n\s*([A-Za-z]+)\s+(\d+)\s*\nConnections\s*(\d+)\s*\nAccepted\s*(\d+)\s*\nMessages\s*(\d+)\s*\n(Appointments|Calls|Appointmetns)\s*(\d+)/i);
-  if (match) return { name: 'Denis', day: match[2], month: match[1], year: '2026', connections: match[3], accepted: match[4], messages: match[5], appointments: match[6] };
+  // Try all formats, return first match
+  let patterns = [
+    // Format: April 14 - Denis / April 14 Denis (with or without dash, with or without colon)
+    /^([A-Za-z]+)\b (\b+) \b*-\b* (\b+)\b/i,
+    // Format: Report from me\nApril 14 - Denis
+    /^Report from me\n+([A-Za-z]+)\b (\b+) \b*-\b* (\b+)\b/i,
+    // Format: Report from me\nApril 14 (defaults to Denis)
+    /^Report from me\n+([A-Za-z]+)\b (\b+)\b/i,
+    // Format: April 14 (just date, no name - defaults to Denis)
+    /^([A-Za-z]+)\b (\b+)\b/i
+  ];
+  
+  for (let pattern of patterns) {
+    let match = text.match(pattern);
+    if (match) {
+      // Extract numbers
+      let connMatch = text.match(/Connections[:\b]+ (\b+)/i);
+      let accMatch = text.match(/Accepted[:\b]+ (\b+)/i);
+      let msgMatch = text.match(/Messages[:\b]+ (\b+)/i);
+      let aptMatch = text.match(/Appointments[:\b]+ (\b+)/i);
+      
+      if (connMatch && accMatch && msgMatch && aptMatch) {
+        let name = 'Denis';
+        if (match[3]) name = match[3];
+        else if (match[1] && match[1] !== 'Report' && match[1] !== 'April') name = match[1];
+        
+        return { 
+          name: name, 
+          day: match[2], 
+          month: match[1] === 'Report' ? 'April' : match[1], 
+          year: '2026', 
+          connections: connMatch[1], 
+          accepted: accMatch[1], 
+          messages: msgMatch[1], 
+          appointments: aptMatch[1] 
+        };
+      }
+    }
+  }
 
   return null;
 }
@@ -70,8 +94,8 @@ async function handleTelegram(body) {
     return { success: true };
   }
 
-  if (!text.match(/^\d/) && !text.match(/^([A-Za-z]+)/)) {
-    const helpText = 'Hi ' + from + '! Here is the format to send your daily report:\n\nReport from me\nApril 9\nConnections: 5\nAccepted: 4\nMessages: 4\nAppointments: 4\n\nOr:\n\nApril 14 - Denis\nConnections: 5\nAccepted: 4\nMessages: 4\nAppointments: 4';
+  if (!text.match(/^\n+/) && !text.match(/^([A-Za-z]+)/)) {
+    const helpText = 'Hi ' + from + '! Here is the format to send your daily report:\n\nReport from me\nApril 14\nConnections: 5\nAccepted: 4\nMessages: 4\nAppointments: 4\n\nOr:\n\nApril 14 - Denis\nConnections: 5\nAccepted: 4\nMessages: 4\nAppointments: 4';
     
     await fetch('https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendMessage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: helpText }) });
   }
