@@ -24,7 +24,6 @@ function parseReport(text) {
   const metrics = {};
 
   lines.forEach(line => {
-    // Date and name: "April 7 - Denis"
     const dateNameMatch = line.match(/^(.+?)\s*[-–—]\s*(.+)$/i);
     if (dateNameMatch && !date) {
       date = dateNameMatch[1].trim();
@@ -32,7 +31,6 @@ function parseReport(text) {
       return;
     }
 
-    // Metrics: "Connections 5", "Accepted: 4", "Messages - 3"
     const metricMatch = line.match(/^([A-Za-zA-Z\s]+?)\s*[-:]?\s*(\d+)$/i);
     if (metricMatch) {
       const key = metricMatch[1].trim().replace(/\s+/g, ' ');
@@ -51,21 +49,17 @@ bot.on('message', async (ctx) => {
   if (chatId !== GROUP_CHAT_ID) return;
 
   const text = (msg.text || msg.caption || '').trim();
-  const from = msg.from;
 
   try {
     const parsed = parseReport(text);
     console.log('Parsed:', parsed);
 
-    if (!parsed.metrics.Connections && !parsed.metrics.Accepted) {
-      return; // Not a report
-    }
+    if (!parsed.metrics.Connections && !parsed.metrics.Accepted) return;
 
     const rawName = parsed.name.toLowerCase();
     let manager = MANAGERS[rawName] || parsed.name;
     manager = manager.charAt(0).toUpperCase() + manager.slice(1);
 
-    // Get date
     let dateStr = new Date().toISOString().split('T')[0];
     if (parsed.date) {
       const dateMatch = parsed.date.match(/([A-Za-z]+)\s+(\d+)/i);
@@ -86,7 +80,6 @@ bot.on('message', async (ctx) => {
       }
     };
 
-    // Add metrics
     if (parsed.metrics.Connections) notionData.properties['Connections Sent'] = { number: parsed.metrics.Connections };
     if (parsed.metrics.Accepted) notionData.properties['Accepted'] = { number: parsed.metrics.Accepted };
     if (parsed.metrics.Messages) notionData.properties['Welcome Messages'] = { number: parsed.metrics.Messages };
@@ -112,5 +105,26 @@ bot.on('message', async (ctx) => {
   }
 });
 
-bot.launch();
-console.log('Bot started with Telegraf');
+// Start bot
+const startBot = async () => {
+  const domain = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.RENDER_EXTERNAL_URL;
+  
+  if (domain) {
+    await bot.launch({
+      webhook: {
+        domain: domain,
+        hookPath: '/webhook',
+        port: process.env.PORT || 8080
+      }
+    });
+    console.log('Webhook: https://' + domain + '/webhook');
+  } else {
+    bot.launch();
+    console.log('Polling mode');
+  }
+};
+
+startBot();
+
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
