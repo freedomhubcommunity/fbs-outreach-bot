@@ -17,7 +17,7 @@ const monthNum = { 'January': '01', 'February': '02', 'March': '03', 'April': '0
 function extractReport(text) {
   text = text.trim();
   
-  // Simple number extraction - just look for digits
+  // Simple number extraction - look for digits after labels
   let connMatch = text.match(/Connections[^0-9]*([0-9]+)/i);
   let accMatch = text.match(/Accepted[^0-9]*([0-9]+)/i);
   let msgMatch = text.match(/Messages[^0-9]*([0-9]+)/i);
@@ -25,26 +25,16 @@ function extractReport(text) {
   
   if (!connMatch || !accMatch || !msgMatch || !aptMatch) return null;
   
-  // Try different formats for name and date
+  // Try formats: April 14 - Denis, Report from me\nApril 14 - Denis
   let match;
-  
-  // Format: April 14 - Denis
   match = text.match(/^([A-Za-z]+) ([0-9]+) - ([A-Za-z]+)/i);
-  if (match) {
-    return { name: match[3], day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
-  }
+  if (match) return { name: match[3], day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
   
-  // Format: Report from me\nApril 14 - Denis
   match = text.match(/Report from me\n([A-Za-z]+) ([0-9]+) - ([A-Za-z]+)/i);
-  if (match) {
-    return { name: match[3], day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
-  }
+  if (match) return { name: match[3], day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
   
-  // Format: Report from me\nApril 14 (defaults to Denis)
   match = text.match(/Report from me\n([A-Za-z]+) ([0-9]+)/i);
-  if (match) {
-    return { name: 'Denis', day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
-  }
+  if (match) return { name: 'Denis', day: match[2], month: match[1], year: '2026', connections: connMatch[1], accepted: accMatch[1], messages: msgMatch[1], appointments: aptMatch[1] };
 
   return null;
 }
@@ -53,7 +43,6 @@ async function handleTelegram(body) {
   const chat = body.message?.chat;
   if (!chat || chat.id.toString() !== GROUP_ID) return null;
   const text = body.message?.text?.trim() || '';
-  const from = body.message?.from?.first_name || 'Unknown';
 
   const report = extractReport(text);
 
