@@ -32,13 +32,13 @@ async function handleTelegram(body) {
 
     await fetch('https://api.notion.com/v1/pages', { method: 'POST', headers: { 'Authorization': `Bearer ${NOTION_TOKEN}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' }, body: JSON.stringify({ parent: { database_id: databaseId }, properties: { 'Name': { title: [{ text: { content: manager } }] }, 'Connections Sent': { number: parseInt(match[5]) }, 'Accepted': { number: parseInt(match[6]) }, 'Welcome Messages': { number: parseInt(match[7]) }, 'Appointments': { number: parseInt(match[8]) }, 'Date ': { date: { start: dateStr } } } }) });
 
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: `✅ ${manager}, thanks! Data saved.\n📅 ${dateStr}\n🔗 ${match[5]} → ✅ ${match[6]} → 💬 ${match[7]} → 📅 ${match[8]}` }) });
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: `Hi ${manager}! 👋\n\nYour report has been saved to Notion.\n\n📊 Summary:\n• Connections: ${match[5]}\n• Accepted: ${match[6]}\n• Welcome Messages: ${match[7]}\n• Appointments: ${match[8]}\n\n📅 Date: ${dateStr}\n\nHave a great day! ✨` }) });
 
     return { success: true };
   }
 
   if (!text.match(/^\d/)) {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: `Hey ${from}! 👋 Use:\nKristine 13 April 2026\nConnections: 10\nAccepted: 10\nMessages: 10\nCalls or Appointments: 6` }) });
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: GROUP_ID, message_thread_id: THREAD_ID, text: `Hi ${from}! 👋\n\nHere's the format to send your daily report:\n\n```\nKristine 13 April 2026\nConnections: 10\nAccepted: 10\nMessages: 10\nCalls or Appointments: 6\n```\n\nJust fill in your numbers and send it here!` }) });
   }
 
   return { parsed: false };
